@@ -10,8 +10,8 @@ class Utils {
   }
 
   /**
-   * 
-   * @param {String} selector 
+   *
+   * @param {String} selector
    * @returns {HTMLElement}
    */
   get(selector) {
@@ -21,7 +21,8 @@ class Utils {
 
 
 (() => {
-  let ready = false;
+  let readyForFpTransition = false;
+  let leaving = false;
   let animationTimeout;
   let transitionTimeout;
 
@@ -115,18 +116,20 @@ class Utils {
   const fullPage = new fullpage("#fullpage", {
     navigation: true,
     navigationPosition: "left",
+    sectionsColor : ['#ccc', '#5a5a5a'],
     afterLoad: function (origin, destination, direction) {
         animateIn({ currentIndex: destination.index });
     },
     onLeave: function (origin, nextIndex, direction) {
-      if (ready) return;
+      if (readyForFpTransition) return;
 
-      clearTimeout(animationTimeout);
-      clearTimeout(transitionTimeout);
+      fullpage_api.setAllowScrolling(false);
+      fullpage_api.setKeyboardScrolling(true);
 
       animateOut({ currentIndex: origin.index });
+
       animationTimeout = setTimeout(() => {
-        ready = true;
+        readyForFpTransition = true
         if (direction === 'down') {
           fullpage_api.moveSectionDown();
           switchIndex();
@@ -135,11 +138,13 @@ class Utils {
           switchIndex();
         }
         transitionTimeout = setTimeout(() => {
-          ready = false;
+          fullpage_api.setAllowScrolling(true);
+          fullpage_api.setKeyboardScrolling(true);
+          readyForFpTransition = false;
         }, 300);
-      }, 300);
+      }, 700);
 
-      return ready;
+      return false;
     },
   });
 
@@ -149,7 +154,7 @@ class Utils {
   const sections = toArray(get('#fullpage').children).filter(s => s.localName === 'section');
   const length = sections.length;
   const counterContainer = toArray(get('.counter').children);
-  
+
 
   const switchIndex = () =>  {
     const { index } = fullPage.getActiveSection();
